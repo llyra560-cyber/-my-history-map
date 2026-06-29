@@ -38,11 +38,11 @@
             font-size: 18px;
             border-bottom: 1px solid #b59b6b;
             padding-bottom: 4px;
-            color: #3d3222;
+            color: #4abfe6;
         }
         .history-popup .meta {
             margin-bottom: 8px;
-            color: #5a4a3a;
+            color: #ee3622;
             font-size: 13px;
         }
         .history-popup .person-img {
@@ -52,7 +52,7 @@
             border-radius: 8px;
             margin-right: 10px;
             float: left;
-            border: 2px solid #b59b6b;
+            border: 2px solid #6ce5bf;
         }
         .history-popup .event-title {
             font-weight: bold;
@@ -70,6 +70,13 @@
             margin-top: 10px;
             border-radius: 6px;
             border: 1px solid #ccc;
+        }
+        .custom-div-icon {
+            font-size: 28px;
+            text-align: center;
+            line-height: 30px;
+            background: none;
+            border: none;
         }
     </style>
 </head>
@@ -92,7 +99,7 @@
                 lng: 113.2644,
                 time: '1911年4月27日',
                 person: '黄兴',
-                personImg: 'https://example.com/huangxing.jpg',     // ← 换成黄兴图片链接
+                personImg: 'https://pics1.baidu.com/feed/2cf5e0fe9925bc31a68fd292d998bebeca137045.jpeg@f_auto?token=7ebd42f21aaaa893df3bbdde11e4cea3',     // ← 换成黄兴图片链接
                 event: '黄花岗起义',
                 detail: '同盟会发动的第十次武装起义，七十二烈士葬于黄花岗。为辛亥革命的前奏，震动全国。',
                 sceneImg: 'https://example.com/huanghuagang.jpg'    // ← 场景图链接（可选）
@@ -188,7 +195,7 @@
             }
         ).addTo(map);
 
-        // ========== 📍 生成历史标记 ==========
+              // ========== 📍 生成历史标记 ==========
         historyEvents.forEach(ev => {
             // 构建弹窗内容：人物图 + 文字
             let popupHTML = `
@@ -217,12 +224,20 @@
 
             popupHTML += `</div>`;
 
-            // 添加标记
-            const marker = L.marker([ev.lat, ev.lng]).addTo(map);
-            marker.bindPopup(popupHTML, { maxWidth: 350 });
-        });
+            // 使用自定义图标（可直接替换 emoji）
+            const customIcon = L.divIcon({
+                html: '🚩',
+                className: 'custom-div-icon',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
 
+            const marker = L.marker([ev.lat, ev.lng], { icon: customIcon }).addTo(map);
+            marker.bindPopup(popupHTML, { maxWidth: 350 });  // ← 这一行必须加上！
+        }); // ← 不要漏掉 forEach 的闭合括号
         // 点击地图空白处自动关闭弹窗（Leaflet默认行为，无需额外代码）
     </script>
+</body>
+</html>
 </body>
 </html>
