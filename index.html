@@ -16,18 +16,69 @@
             top: 0;
             left: 0;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            color: #f0e6c5;
+            background: rgba(118, 60, 60, 0.852);
+            color: #fff9f6;
             width: 100%;
             text-align: center;
             padding: 10px 0;
             font-size: 20px;
             letter-spacing: 4px;
             backdrop-filter: blur(4px);
-            border-bottom: 1px solid #b59b6b;
+            border-bottom: 1px solid #212121;
         }
 
-        /* 弹窗内部样式 */
+        /* ---------- 图例面板 ---------- */
+        .legend-panel {
+            position: absolute;
+            top: 80px;           /* 避开顶部标题 */
+            right: 10px;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.75);
+            color: #f0e6c5;
+            border-radius: 8px;
+            max-width: 220px;
+            backdrop-filter: blur(6px);
+            border: 1px solid #b59b6b;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        /* 折叠状态 */
+        .legend-panel.collapsed .legend-content {
+            display: none;
+        }
+        .legend-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-bottom: 1px solid transparent;
+        }
+        .legend-panel:not(.collapsed) .legend-toggle {
+            border-bottom: 1px solid #b59b6b;
+        }
+        .legend-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .legend-content {
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .legend-content div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-content span {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        /* ---------- 弹窗样式保持不变 ---------- */
         .history-popup {
             max-width: 320px;
             font-size: 14px;
@@ -81,17 +132,32 @@
     </style>
 </head>
 <body>
-    <!-- 顶部总时间条：你可以自由修改文字 -->
+    <!-- 顶部总时间条 -->
     <div class="history-header">📜 中国近现代史 · 1840 — 1949 
         中国党史新民主主义时期 · 1918 — 1949</div>
+
+    <!-- 图例面板 -->
+    <div class="legend-panel collapsed" id="legendPanel">
+        <div class="legend-toggle" id="legendToggle">
+            <span>📖 图例</span>
+            <span id="legendArrow">▶</span>
+        </div>
+        <div class="legend-content">
+            <div><span>⭐</span> 1911-1919 旧民主主义革命</div>
+            <div><span>🔥</span> 1919-1927 建党和大革命</div>
+            <div><span>⛏️</span> 1927-1937 土地革命</div>
+            <div><span>⚔️</span> 1937-1945 抗日战争</div>
+            <div><span>🕊️</span> 1945-1949 解放战争</div>
+        </div>
+    </div>
 
     <div id="map"></div>
 
     <script>
-        // ========== 🔑 1. 把你的高德Key粘贴到这里 ==========
-        const amapKey = '01738e84c81339d5650d23e88742cf48';  // ← 换成你的 Key
+        // ========== 🔑 高德Key ==========
+        const amapKey = '01738e84c81339d5650d23e88742cf48';
 
-        // ========== 📖 2. 修改下面的历史事件数据，想加几个城市就加几个 ==========
+        // ========== 📖 历史事件数据 ==========
         const historyEvents = [
             {
                 name: '广州',
@@ -99,10 +165,12 @@
                 lng: 113.2644,
                 time: '1911年4月27日',
                 person: '黄兴',
-                personImg: 'https://i.ibb.co/DfLJSQTh/image.png',     // ← 换成黄兴图片链接
+                personImg: 'https://i.ibb.co/DfLJSQTh/image.png',
                 event: '黄花岗起义',
                 detail: '同盟会发动的第十次武装起义，七十二烈士葬于黄花岗。为辛亥革命的前奏，震动全国。',
-                sceneImg: 'https://example.com/huanghuagang.jpg'    // ← 场景图链接（可选）
+                sceneImg: '',
+                iconHtml: '⭐',
+                panoramaUrl: 'https://www.720yun.com/t/597jt54fkm9?scene_id=13285479&from=embed'
             },
             {
                 name: '武汉',
@@ -113,7 +181,9 @@
                 personImg: 'https://i.postimg.cc/yYBR9gRf/image.png',
                 event: '武昌起义',
                 detail: '湖北新军打响辛亥革命第一枪，随后各省纷纷响应，清朝统治土崩瓦解。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '⭐',
+                panoramaUrl: ''
             },
             {
                 name: '南京',
@@ -124,7 +194,9 @@
                 personImg: 'https://i.postimg.cc/Cx9kRvs4/image.png',
                 event: '中华民国成立',
                 detail: '孙中山在南京宣誓就任临时大总统，亚洲第一个民主共和国诞生。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '⭐',
+                panoramaUrl: ''
             },
             {
                 name: '北京',
@@ -135,7 +207,9 @@
                 personImg: 'https://i.postimg.cc/rmNrYqXf/image.png',
                 event: '五四运动',
                 detail: '以学生为先导的爱国运动，新民主主义革命的开端，马克思主义广泛传播。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '🔥',
+                panoramaUrl: ''
             },
             {
                 name: '上海',
@@ -146,7 +220,9 @@
                 personImg: 'https://i.postimg.cc/TYwDC8kH/image.png',
                 event: '中共一大',
                 detail: '中国共产党第一次全国代表大会在上海召开，中国革命的面貌焕然一新。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '🚩',
+                panoramaUrl: ''
             },
             {
                 name: '南昌',
@@ -157,7 +233,9 @@
                 personImg: 'https://i.postimg.cc/2yqCLxw7/image.png',
                 event: '南昌起义',
                 detail: '打响武装反抗国民党反动派的第一枪，是创建人民军队的开始。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '🔥',
+                panoramaUrl: ''
             },
             {
                 name: '汉口',
@@ -167,8 +245,10 @@
                 person: '毛泽东',
                 personImg: 'https://i.postimg.cc/TYwDC8kH/image.png',
                 event: '八七会议',
-                detail: '陈独秀 右倾，毛泽东政权枪杆子 土地革命 历史性转变',
-                sceneImg: ''
+                detail: '陈独秀右倾，毛泽东提出“政权是由枪杆子中取得的”，土地革命兴起。',
+                sceneImg: '',
+                iconHtml: '⛏️',
+                panoramaUrl: ''
             },
             {
                 name: '遵义',
@@ -179,7 +259,9 @@
                 personImg: 'https://i.postimg.cc/TYwDC8kH/image.png',
                 event: '遵义会议',
                 detail: '确立了毛泽东在红军和中共中央的领导地位，挽救了党、红军和中国革命。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '⛏️',
+                panoramaUrl: ''
             },
             {
                 name: '延安',
@@ -190,14 +272,15 @@
                 personImg: 'https://i.postimg.cc/TYwDC8kH/image.png',
                 event: '延安时期',
                 detail: '中共中央所在地，抗日战争和解放战争初期的指挥中枢，形成了延安精神。',
-                sceneImg: ''
+                sceneImg: '',
+                iconHtml: '⚔️',
+                panoramaUrl: ''
             }
         ];
 
-        // ========== 🗺️ 地图初始化（无需修改） ==========
+        // ========== 🗺️ 地图初始化 ==========
         const map = L.map('map').setView([34.0, 108.0], 5);
 
-        // 高德地图瓦片
         L.tileLayer(
             `https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}&key=${amapKey}`,
             {
@@ -206,20 +289,16 @@
             }
         ).addTo(map);
 
-              // ========== 📍 生成历史标记 ==========
+        // ========== 📍 生成历史标记 ==========
         historyEvents.forEach(ev => {
-            // 构建弹窗内容：人物图 + 文字
             let popupHTML = `
                 <div class="history-popup">
                     <h3>${ev.name}</h3>
                     <div class="meta">⏳ ${ev.time}</div>
             `;
-
-            // 如果有设置人物图片，就显示出来
             if (ev.personImg && ev.personImg.trim() !== '') {
                 popupHTML += `<img class="person-img" src="${ev.personImg}" alt="${ev.person}">`;
             }
-
             popupHTML += `
                     <div style="overflow:hidden;">
                         <div><strong>👤 人物：</strong>${ev.person}</div>
@@ -227,26 +306,50 @@
                         <div class="detail">${ev.detail}</div>
                     </div>
             `;
-
-            // 如果有场景图
             if (ev.sceneImg && ev.sceneImg.trim() !== '') {
                 popupHTML += `<img class="scene-img" src="${ev.sceneImg}" alt="场景图">`;
             }
-
+            if (ev.panoramaUrl && ev.panoramaUrl.trim() !== '') {
+                popupHTML += `<p>🎥 360° 全景：</p><iframe src="${ev.panoramaUrl}" width="100%" height="200" frameborder="0" allowfullscreen></iframe>`;
+            }
             popupHTML += `</div>`;
 
-            // 使用自定义图标（可直接替换 emoji）
+            const iconHtml = ev.iconHtml || '📍';
             const customIcon = L.divIcon({
-                html: '🚩',
+                html: iconHtml,
                 className: 'custom-div-icon',
                 iconSize: [30, 30],
                 iconAnchor: [15, 30]
             });
 
             const marker = L.marker([ev.lat, ev.lng], { icon: customIcon }).addTo(map);
-            marker.bindPopup(popupHTML, { maxWidth: 350 });  // ← 这一行必须加上！
-        }); // ← 不要漏掉 forEach 的闭合括号
-        // 点击地图空白处自动关闭弹窗（Leaflet默认行为，无需额外代码）
+            marker.bindPopup(popupHTML, { maxWidth: 350 });
+        });
+
+        // ========== 📖 图例折叠逻辑 ==========
+        const legendPanel = document.getElementById('legendPanel');
+        const legendToggle = document.getElementById('legendToggle');
+        const legendArrow = document.getElementById('legendArrow');
+
+        legendToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止冒泡到地图，触发关闭弹窗
+            const isCollapsed = legendPanel.classList.contains('collapsed');
+            if (isCollapsed) {
+                legendPanel.classList.remove('collapsed');
+                legendArrow.textContent = '▼';
+            } else {
+                legendPanel.classList.add('collapsed');
+                legendArrow.textContent = '▶';
+            }
+        });
+
+        // 点击地图空白处，图例自动收起（同时保留关闭弹窗）
+        map.on('click', () => {
+            if (!legendPanel.classList.contains('collapsed')) {
+                legendPanel.classList.add('collapsed');
+                legendArrow.textContent = '▶';
+            }
+        });
     </script>
 </body>
 </html>
