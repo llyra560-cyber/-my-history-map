@@ -18,7 +18,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            background: rgba(180, 130, 80, 0.2);
+            background: rgba(180, 130, 80, 0.08);
             z-index: 500;
         }
 
@@ -230,13 +230,31 @@
                 lat: 31.2304,
                 lng: 121.4737,
                 time: '1921年7月23日',
-                person: '毛泽东',
-                personImg: 'https://i.postimg.cc/TYwDC8kH/image.png',
+                person: '毛泽东、李达、李汉俊等13人',
+                personImg: 'https://i.postimg.cc/KYDMV2Fs/image.png',
                 event: '中共一大',
+                cause: '俄国十月革命胜利后，马克思主义在中国广泛传播，各地共产主义小组相继成立，建立全国统一的无产阶级政党的条件已经成熟。',
                 detail: '中国共产党第一次全国代表大会在上海召开，中国革命的面貌焕然一新。',
-                sceneImg: '',
+                impact: '中国共产党的成立，是中华民族发展史上开天辟地的大事，深刻改变了近代以后中华民族发展的方向和进程，改变了中国人民和中华民族的前途和命运，改变了世界发展的趋势和格局。',
+                sceneImg: 'https://i.postimg.cc/d1cyNVzw/image.png',
                 iconHtml: '🚩',
-                panoramaUrl: ''
+                panoramaUrl: '',
+                videoUrl: 'https://player.bilibili.com/player.html?bvid=xxxxx',  // 视频嵌入链接
+                delegates: [
+                    {
+                        name: '李达',
+                        hometown: '湖南零陵',
+                        role: '上海代表，会议筹备者，负责与共产国际代表联络',
+                        img: 'https://i.postimg.cc/mZcvy2TM/image.png'
+                    },
+                    {
+                        name: '李汉俊',
+                        hometown: '湖北潜江',
+                        role: '上海代表，会议地点提供者（其兄李书城的寓所）',
+                        img: 'https://i.postimg.cc/7LWB50JP/image.png'
+                    },
+                    // ... 其余11位代表按相同格式添加
+                ]
             },
             {
                 name: '南昌',
@@ -303,29 +321,71 @@
             }
         ).addTo(map);
 
-        // ========== 📍 生成历史标记 ==========
+       // ========== 📍 生成历史标记 ==========
         historyEvents.forEach(ev => {
             let popupHTML = `
                 <div class="history-popup">
                     <h3>${ev.name}</h3>
                     <div class="meta">⏳ ${ev.time}</div>
             `;
+
+            // 人物主图
             if (ev.personImg && ev.personImg.trim() !== '') {
                 popupHTML += `<img class="person-img" src="${ev.personImg}" alt="${ev.person}">`;
             }
+
             popupHTML += `
                     <div style="overflow:hidden;">
                         <div><strong>👤 人物：</strong>${ev.person}</div>
                         <div class="event-title">📌 ${ev.event}</div>
-                        <div class="detail">${ev.detail}</div>
-                    </div>
             `;
+
+            // 重点原因
+            if (ev.cause && ev.cause.trim() !== '') {
+                popupHTML += `<div style="margin-top:6px;"><strong>🔍 背景原因：</strong>${ev.cause}</div>`;
+            }
+
+            // 事件详情
+            popupHTML += `<div class="detail">${ev.detail}</div>`;
+
+            // 事件影响
+            if (ev.impact && ev.impact.trim() !== '') {
+                popupHTML += `<div style="margin-top:8px;color:#8b1a1a;"><strong>📜 历史影响：</strong>${ev.impact}</div>`;
+            }
+
+            popupHTML += `</div>`;
+
+            // 13位代表详情（仅当有 delegates 数据时显示）
+            if (ev.delegates && ev.delegates.length > 0) {
+                popupHTML += `<div style="margin-top:10px;border-top:1px solid #b59b6b;padding-top:8px;"><strong>👥 13位代表：</strong></div>`;
+                ev.delegates.forEach(d => {
+                    popupHTML += `
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                            <img src="${d.img}" alt="${d.name}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">
+                            <div style="font-size:12px;">
+                                <strong>${d.name}</strong> · ${d.hometown}<br>
+                                <span style="color:#5a4a3a;">${d.role}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 场景图（南湖游船等）
             if (ev.sceneImg && ev.sceneImg.trim() !== '') {
                 popupHTML += `<img class="scene-img" src="${ev.sceneImg}" alt="场景图">`;
             }
+
+            // 视频
+            if (ev.videoUrl && ev.videoUrl.trim() !== '') {
+                popupHTML += `<p>🎬 相关视频：</p><iframe src="${ev.videoUrl}" width="100%" height="200" frameborder="0" allowfullscreen></iframe>`;
+            }
+
+            // 全景图
             if (ev.panoramaUrl && ev.panoramaUrl.trim() !== '') {
                 popupHTML += `<p>🎥 360° 全景：</p><iframe src="${ev.panoramaUrl}" width="100%" height="200" frameborder="0" allowfullscreen></iframe>`;
             }
+
             popupHTML += `</div>`;
 
             const iconHtml = ev.iconHtml || '📍';
@@ -337,32 +397,10 @@
             });
 
             const marker = L.marker([ev.lat, ev.lng], { icon: customIcon }).addTo(map);
-            marker.bindPopup(popupHTML, { maxWidth: 350 });
+            marker.bindPopup(popupHTML, { maxWidth: 400 });  // 调大弹窗宽度以容纳更多内容
         });
-
-        // ========== 📖 图例折叠逻辑 ==========
-        const legendPanel = document.getElementById('legendPanel');
-        const legendToggle = document.getElementById('legendToggle');
-        const legendArrow = document.getElementById('legendArrow');
-
-        legendToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isCollapsed = legendPanel.classList.contains('collapsed');
-            if (isCollapsed) {
-                legendPanel.classList.remove('collapsed');
-                legendArrow.textContent = '▼';
-            } else {
-                legendPanel.classList.add('collapsed');
-                legendArrow.textContent = '▶';
-            }
-        });
-
-        map.on('click', () => {
-            if (!legendPanel.classList.contains('collapsed')) {
-                legendPanel.classList.add('collapsed');
-                legendArrow.textContent = '▶';
-            }
-        });
+       
+    
     </script>
 </body>
 </html>
