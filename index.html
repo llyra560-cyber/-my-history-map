@@ -10,6 +10,18 @@
         body { margin: 0; font-family: "Microsoft YaHei", sans-serif; }
         #map { width: 100vw; height: 100vh; }
 
+        /* 暖色复古覆盖层（不影响交互和弹窗） */
+        .map-warm-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: rgba(180, 130, 80, 0.08);
+            z-index: 500;
+        }
+
         /* 顶部历史总时间标题 */
         .history-header {
             position: absolute;
@@ -30,7 +42,7 @@
         /* ---------- 图例面板 ---------- */
         .legend-panel {
             position: absolute;
-            top: 80px;           /* 避开顶部标题 */
+            top: 80px;
             right: 10px;
             z-index: 1001;
             background: rgba(0, 0, 0, 0.75);
@@ -42,7 +54,6 @@
             transition: all 0.3s ease;
             overflow: hidden;
         }
-        /* 折叠状态 */
         .legend-panel.collapsed .legend-content {
             display: none;
         }
@@ -78,7 +89,8 @@
             width: 24px;
             text-align: center;
         }
-        /* ---------- 弹窗样式保持不变 ---------- */
+
+        /* 弹窗内部样式 */
         .history-popup {
             max-width: 320px;
             font-size: 14px;
@@ -152,6 +164,8 @@
     </div>
 
     <div id="map"></div>
+    <!-- 暖色覆盖层 -->
+    <div class="map-warm-overlay"></div>
 
     <script>
         // ========== 🔑 高德Key ==========
@@ -170,7 +184,7 @@
                 detail: '同盟会发动的第十次武装起义，七十二烈士葬于黄花岗。为辛亥革命的前奏，震动全国。',
                 sceneImg: '',
                 iconHtml: '⭐',
-                panoramaUrl: 'https://www.720yun.com/vr/0c82aasO9ca&from=embed'
+                panoramaUrl: 'https://www.720yun.com/vr/0c82aasO9ca?from=embed'
             },
             {
                 name: '武汉',
@@ -332,7 +346,7 @@
         const legendArrow = document.getElementById('legendArrow');
 
         legendToggle.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止冒泡到地图，触发关闭弹窗
+            e.stopPropagation();
             const isCollapsed = legendPanel.classList.contains('collapsed');
             if (isCollapsed) {
                 legendPanel.classList.remove('collapsed');
@@ -343,7 +357,6 @@
             }
         });
 
-        // 点击地图空白处，图例自动收起（同时保留关闭弹窗）
         map.on('click', () => {
             if (!legendPanel.classList.contains('collapsed')) {
                 legendPanel.classList.add('collapsed');
